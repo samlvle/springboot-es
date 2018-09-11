@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.baozun.product.es.mapper.ItemMapper">
+
+	<resultMap type="com.baozun.product.domain.Item" id="ItemCategoryBrandResultMap">
+		<id column="id" property="id" />
+		<result column="code" property="code" />
+		<result column="tenant_code" property="tenantCode" />
+		<result column="propertyset_id" property="propertySetId" />
+		<result column="title" property="title" />
+		<result column="sub_title" property="subTitle" />		
+		<!-- <result column="sketch" property="sketch" /> -->
+		<result column="salePrice" property="salePrice" />
+		<result column="listPrice" property="listPrice" />
+		<result column="type" property="type" />
+		<!-- <result column="style" property="style" />
+		<result column="seo_title" property="seoTitle" />
+		<result column="seo_keywords" property="seoKeywords" />
+		<result column="seo_description" property="seoDescription" /> -->
+		<result column="pre_order" property="preOrder" />
+		<result column="size_chart" property="sizeChart" />
+	<!-- 	<result column="activeStartTime" property="activeStartTime" />
+		<result column="activeEndTime" property="activeEndTime" /> -->
+		
+		<!-- <result column="custom_url" property="customUrl" /> -->
+		<!-- <result column="is_show_promotion_icon" property="isShowPromotionIcon" />
+		<result column="promotion_icon_url" property="promotionIconUrl" />
+		<result column="product_img_alt" property="productImgAlt" /> -->
+		<result column="list_time" property="listTime" />
+		<result column="delist_time" property="delistTime" />		
+		<result column="description" property="description" />
+		<result column="sale_status" property="saleStatus" />
+		<result column="jm_code" property="jmCode" />		
+		<result column="supplier_sku_code" property="supplierSkuCode" />
+		<result column="update_time" property="updateTime" />
+		<result column="create_time" property="createTime" />
+		<result column="logic_delete" property="logicDelete" />
+		<result column="fixed_delist_time" property="fixedDelistTime" />
+		<result column="fixed_list_time" property="fixedListTime" />
+		<!-- spu 销量 -->		
+		<result column="spu.saleNums" property="sales" />
+		<!-- 一个商品对应一个品牌 -->
+		<association property="brand" javaType="com.baozun.product.domain.Brand">        
+		 <id column="brand.id" property="id"/>                                     
+		 <result column="brand.description" property="description"/>                             
+		 <result column="brand.name" property="name"/>                         
+		 <result column="brand.code" property="code"/>   
+		 <result column="brand.image_url" property="imageUrl"/>   
+		 <result column="brand.enable_sign" property="enableSign"/>   		 	                         
+		</association>      
+		<!-- 一个商品对应一个分类 -->          
+	    <collection property="categoryList" ofType="com.baozun.product.domain.Category">          
+		<id column="category.id" property="id"/>                                                 
+		<result column="category.code" property="code"/>                                    
+	    <result column="category.name" property="name"/>                                     
+	    <result column="category.sort" property="sort"/>                             
+	    <result column="category.front_name" property="frontName"/>   
+	    <result column="category.parent_id" property="parentId"/>   	    
+	    <result column="category.category_path" property="categoryPath"/>   	   
+	    </collection>
+		
+	</resultMap>
+	<select id="queryItems" resultMap="ItemCategoryBrandResultMap">
+		SELECT tpi.id,
+		tpi.code,
+		tpi.tenant_code,
+		tpi.propertyset_id,
+		tpi.title,
+		tpi.sub_title, 
+		concat(tpi.sale_price,'') as salePrice,
+		concat(tpi.list_price,'') as listPrice, 
+		tpi.type, 		
+		tpi.pre_order,
+		tpi.size_chart ,			
+		tpi.store_brand_id, 		
+		date_format(tpi.list_time, '%Y-%c-%d %H:%i:%s') as list_time,
+		date_format(tpi.delist_time,'%Y-%c-%d %H:%i:%s') as delist_time,				
+		tpi.description,		
+		tpi.sale_status, 
+		tpi.jm_code, 
+		tpi.supplier_sku_code, 
+		date_format(tpi.update_time,'%Y-%c-%d %H:%i:%s') as update_time,
+		date_format(tpi.create_time, '%Y-%c-%d %H:%i:%s') as create_time,
+		tpi.logic_delete, 
+		date_format(tpi.fixed_delist_time, '%Y-%c-%d %H:%i:%s') as fixed_delist_time,
+		date_format(tpi.fixed_list_time, '%Y-%c-%d %H:%i:%s') as fixed_list_time,
+        
+        tpb.id 'brand.id',
+		tpb.description 'brand.description',
+		tpb.name 'brand.name',
+		tpb.code 'brand.code',
+		tpb.image_url 'brand.image_url',
+		tpb.enable_sign 'brand.enable_sign',
+
+		tpc.id 'category.id',
+		tpc.code 'category.code',
+		tpc.name 'category.name',
+		tpc.sort 'category.sort',
+		tpc.front_name 'category.front_name',
+		tpc.parent_id 'category.parent_id',
+		tpc.category_path 'category.category_path',
+		tpss.saleNums 'spu.saleNums'
+		FROM
+		t_pd_item tpi
+		LEFT JOIN t_pd_brand tpb ON tpi.store_brand_id = tpb.id
+		LEFT JOIN t_pd_item_category tpic ON tpi.id = tpic.item_id
+		LEFT JOIN t_pd_category tpc ON tpic.category_id = tpc.id
+		  LEFT JOIN t_pd_salesvolume_sums tpss on tpi.tenant_code=tpss.tenant_code and tpss.spuCode=tpi.code
+		WHERE tpi.logic_delete = 0 and tpi.tenant_code=88000028 and tpi.id>#{maxId} order by tpi.id asc limit #{pageSize} ;
+		#and tpi.code='11122040'
+	</select>
+	
+	<!-- 商品属性，属性值 -->
+	<resultMap type="com.baozun.product.domain.ItemAttribute" id="itemAttrAttrValue">
+	<id column="item.id" property="itemId" />
+	<collection property="attributeList" ofType="com.baozun.product.domain.Attribute">          
+	    <id column="item.attr_id" property="id" />
+	    <result column="item.id" property="itemId" />
+		<result column="item.attr_code" property="code" />
+		<result column="item.attribute_front_name" property="attributeFrontName" />
+		<result column="item.attribute_name" property="attributeName" />
+		<result column="item.attribute_type" property="attributeType" />
+		<result column="item.attribute_value_type" property="attributeValueType" />	
+		
+		<result column="item.attribute_value_mandatory" property="attributeValueMandatory" />	
+		<result column="item.attribute_color" property="attributeColor" />	
+		<result column="item._attr_filter_sign" property="filterSign" />	
+		<result column="item.attribute_class_flag" property="attributeClassFlag" />	
+		
+		<result column="item.attribute_class_id" property="attributeClassId" />	
+		<result column="item.attr_sort" property="sort" />	
+		<result column="item.attr_is_display" property="isDisplay" />	
+		<!-- 一个属性有多个值 -->
+		 <collection property="attributeValueList" ofType="com.baozun.product.domain.AttributeValue">          
+		<id column="item.attr_value_id" property="id"/>                                                 
+		<result column="item.attr_value_code" property="code"/>                                    
+	    <result column="item.attribute_value_name" property="attributeValueName"/>                                     
+	    <result column="item.attribute_value_front_name" property="attributeValueFrontName"/>                             
+	    <result column="item.attribute_value_index" property="attributeIndex"/>   
+	    <result column="item.attr_value_image_url" property="attributeValuePicURL"/>   	    
+	    <result column="item.attribute_class_value_id" property="attributeClassValueId"/>   	   
+	    </collection>
+	    </collection>
+   </resultMap>
+<select id="queryItemAttrs" resultMap="itemAttrAttrValue">
+  select 
+  tpi.id 'item.id', 
+  #商品属性
+  tpa.id 'item.attr_id',
+  tpa.code 'item.attr_code',
+  tpa.attribute_front_name 'item.attribute_front_name',
+  tpa.attribute_name 'item.attribute_name',
+  tpa.attribute_type 'item.attribute_type',
+  tpa.attribute_value_type 'item.attribute_value_type',
+  tpa.attribute_value_mandatory 'item.attribute_value_mandatory',
+  tpa.attribute_color 'item.attribute_color',
+  tpa.filter_sign 'item._attr_filter_sign',
+  tpa.attribute_class_flag 'item.attribute_class_flag',
+  tpa.attribute_class_id 'item.attribute_class_id',
+  tpa.sort 'item.attr_sort',
+  tpa.is_display 'item.attr_is_display',
+   
+  #商品单选，手动输入的，多选的商品的属性值 
+  tpav.id 'item.attr_value_id',
+  tpav.code 'item.attr_value_code',
+  
+  (CASE WHEN tpa.attribute_value_type = '2' THEN tpiav.attribute_value
+  ELSE tpav.attribute_value_name END) 'item.attribute_value_name',
+  
+  (CASE WHEN tpa.attribute_value_type = '2' THEN tpiav.attribute_value
+  ELSE tpav.attribute_value_front_name END) 'item.attribute_value_front_name',
+  
+  tpav.attribute_index 'item.attribute_value_index',
+  tpav.image_url 'item.attr_value_image_url',
+  tpav.attribute_class_value_id 'item.attribute_class_value_id'
+FROM
+     t_pd_item  tpi
+LEFT JOIN t_pd_item_attribute_value tpiav on tpiav.item_id=tpi.id and tpiav.tenant_code=tpi.tenant_code and tpiav.logic_delete=0
+LEFT JOIN t_pd_attribute tpa on tpa.id=tpiav.attribute_id and tpa.tenant_code= tpi.tenant_code and tpa.logic_delete=0
+LEFT JOIN t_pd_attribute_value tpav on tpav.belong_attribute_id=tpa.id and tpav.tenant_code=tpi.tenant_code  and tpav.logic_delete=0  and tpiav.attribute_value_id=tpav.id
+
+where tpi.logic_delete = 0 and tpa.attribute_type=0  
+ <foreach collection="itemIds" item="id"
+			open="and tpi.id in ( " close=")" separator=",">
+			#{id}
+		</foreach>
+	</select>
+<!-- 商品的销售属性，属性值，销售属性图片，缩率图 -->
+<resultMap type="com.baozun.product.domain.ItemSaleAttribute" id="itemSaleAttrValue">
+	<id column="item.id" property="itemId" />
+	<collection property="saleAttributeList" ofType="com.baozun.product.domain.SalesAttribute"> 
+	   <id column="item.attr_id" property="id" />
+	    <result column="item.id" property="itemId" />
+		<result column="item.attr_sale_code" property="code" />		
+		<result column="item.attribute_sale_front_name" property="attributeFrontName" />
+		<result column="item.attribute_sale_name" property="attributeName" />
+		<result column="item.attribute_sale_type" property="attributeType" />
+		<result column="item.attribute_sale_value_type" property="attributeValueType" />
+		<result column="item.attribute_sale_value_mandatory" property="attributeValueMandatory" />
+		<result column="item.attribute_sale_color" property="attributeColor" />
+		<result column="item._attr_sale_filter_sign" property="filterSign" />
+		<result column="item.attribute_sale_class_flag" property="attributeClassFlag" />
+		<result column="item.attribute_sale_class_id" property="attributeClassId" />
+		<result column="item.attr_sale_sort" property="sort" />		
+		<result column="item.attr_sale_is_display" property="isDisplay" />
+		<collection property="attributeValueList" ofType="com.baozun.product.domain.AttributeSaleValue">
+		<id column="item.attr_value_id" property="id"/>                                                 
+		<result column="item.attr_value_code" property="code"/> 		
+		<result column="item.attribute_value_name" property="attributeValueName"/> 
+		<result column="item.attribute_value_front_name" property="attributeValueFrontName"/> 
+		<result column="item.attribute_value_index" property="attributeIndex"/> 
+		<result column="item.attr_value_image_url" property="attributeValuePicURL"/> 
+		<result column="item.attribute_class_value_id" property="attributeClassValueId"/> 
+		 <collection property="itemAttributeValueImageList" ofType="com.baozun.product.domain.ItemSaleAttrImage">
+		 <id column="item.attr_sale_Image_id" property="id"/>   
+		 <result column="item.attr_sale_Image_code" property="code"/> 		 
+		 <result column="item.attr_sale_Image_pic_url" property="picUrl"/> 
+		 <result column="item.attr_sale_Image_position" property="position"/> 
+		 <result column="item.attr_sale_Image_pic_order" property="picOrder"/> 
+		 </collection>		 
+		 <collection property="itemAttributeValueThumbnailList" ofType="com.baozun.product.domain.ItemSaleAttrImageAttach">  
+          <id column="item.attr_sale_Attach_Image_id" property="id"/>            
+		 <result column="item.attr_sale_attach_type" property="targetType"/> 		 
+		 <result column="item.attr_sale_attach_rel_type" property="relType"/> 
+		 <result column="item.attr_sale_attach_media_type" property="mediaType"/> 
+		 <result column="item.attr_sale_attach_url" property="url"/> 
+		  <result column="item.attr_sale_attach_sort" property="sort"/> 
+		 </collection>
+		</collection>
+		
+	</collection>
+</resultMap>
+<!-- 商品的销售属性，属性值，销售属性图片，缩率图 -->
+<select id="queryItemSaleAttrs" resultMap="itemSaleAttrValue">
+SELECT
+  tpi.id 'item.id',
+  #商品销售属性
+  tpa.id 'item.attr_id',
+  tpa.code 'item.attr_sale_code',
+  tpa.attribute_front_name 'item.attribute_sale_front_name',
+  tpa.attribute_name 'item.attribute_sale_name',
+  tpa.attribute_type 'item.attribute_sale_type',  
+  tpa.attribute_value_type 'item.attribute_sale_value_type',
+  tpa.attribute_value_mandatory 'item.attribute_sale_value_mandatory', 
+  tpa.attribute_color 'item.attribute_sale_color',
+  tpa.filter_sign 'item._attr_sale_filter_sign',
+  tpa.attribute_class_flag 'item.attribute_sale_class_flag',
+  tpa.attribute_class_id 'item.attribute_sale_class_id',
+  tpa.sort 'item.attr_sale_sort',
+  tpa.is_display 'item.attr_sale_is_display',
+  
+  #商品销售属性值
+  tpav.id 'item.attr_value_id',
+  tpav.code 'item.attr_value_code',
+  tpav.attribute_value_name 'item.attribute_value_name',
+  tpav.attribute_value_front_name 'item.attribute_value_front_name',
+  tpav.attribute_index 'item.attribute_value_index',
+  tpav.image_url 'item.attr_value_image_url',
+  tpav.attribute_class_value_id 'item.attribute_class_value_id',
+  
+  #商品的销售属性图片
+  tpii.id 'item.attr_sale_Image_id',
+  tpii.code 'item.attr_sale_Image_code',
+  #tpii.media_type 'item.attr_sale_Image_media_type',
+  tpii.pic_url 'item.attr_sale_Image_pic_url',
+  tpii.position 'item.attr_sale_Image_position',
+  tpii.pic_order 'item.attr_sale_Image_pic_order',
+
+  #商品销售属性的缩率图
+  tpiia.id 'item.attr_sale_Attach_Image_id',
+  tpiia.target_type 'item.attr_sale_attach_type',
+  tpiia.rel_type 'item.attr_sale_attach_rel_type',
+  tpiia.media_type 'item.attr_sale_attach_media_type',
+  tpiia.url 'item.attr_sale_attach_url',
+  tpiia.sort 'item.attr_sale_attach_sort'
+  
+FROM
+          t_pd_item  tpi
+LEFT JOIN t_pd_item_image tpii ON  tpii.tenant_code=tpi.tenant_code and tpii.item_id !=tpii.sale_attribute_id and tpii.item_id=tpi.id  
+LEFT JOIN t_pd_attribute tpa on  tpa.tenant_code=tpii.tenant_code and tpa.attribute_type=1 and tpa.logic_delete=0 and tpa.id=tpii.sale_attribute_id
+LEFT JOIN t_pd_attribute_value tpav on  tpav.tenant_code=tpi.tenant_code and tpav.belong_attribute_id=tpa.id and tpav.logic_delete=0  and tpii.sale_attribute_value=tpav.id
+LEFT JOIN t_pd_item_image_attach tpiia on tpiia.tenant_code=tpi.tenant_code and   tpiia.item_id=tpi.id and tpiia.logic_delete=0  and  tpii.item_image_reg_id =tpiia.target_id
+where  	tpi.logic_delete = 0  
+ <foreach collection="itemIds" item="id"
+			open="and tpi.id in ( " close=")" separator=",">
+			#{id}
+		</foreach>
+</select>	
+
+	
+<resultMap type="com.baozun.product.domain.ItemImages" id="itemImages">
+	<id column="item.id" property="itemId" />
+	<collection property="itemImageList" ofType="com.baozun.product.domain.ItemImage" >
+        <id column="item.Image_id" property="id" />
+	    <result column="item.Image_code" property="code" />
+		<result column="item.Image_media_type" property="mediaType" />	
+		<result column="item.Image_pic_url" property="picUrl" />	
+		<result column="item.Image_position" property="position" />	
+		<result column="item.Image_pic_order" property="picOrder" />	
+	</collection>
+</resultMap>	
+	<!-- 商品的销售属性，属性值，销售属性图片，缩率图 -->
+<select id="queryItemImages" resultMap="itemImages">
+#商品图片信息
+SELECT
+  tpi.id 'item.id',
+  tpii.id 'item.Image_id',
+  tpii.code 'item.Image_code',
+  tpii.media_type 'item.Image_media_type',
+  tpii.pic_url 'item.Image_pic_url',
+  tpii.position 'item.Image_position',
+  tpii.pic_order 'item.Image_pic_order'
+FROM
+          t_pd_item  tpi
+LEFT JOIN t_pd_item_image tpii ON tpii.item_id=tpi.id and tpii.item_id=tpii.sale_attribute_id and tpii.logic_delete=0
+WHERE
+	tpi.logic_delete = 0  
+	<foreach collection="itemIds" item="id"
+			open="and tpi.id in ( " close=")" separator=",">
+			#{id}
+		</foreach>
+</select>
+<!-- sku信息和销售属性，属性值 -->
+<resultMap type="com.baozun.product.domain.Skus" id="skuInfos">
+	<id column="item.id" property="itemId" />
+	<collection property="skuList" ofType="com.baozun.product.domain.Sku" >
+        <id column="sku.id" property="id" />
+	    <result column="sku.extention_code" property="extentionCode" />
+		<result column="sku.code" property="code" />	
+		<result column="sku.list_price" property="listPrice" />	
+		<result column="sku.sale_price" property="salePrice" />	
+		<result column="sku.is_default" property="isDefault" />					
+		<result column="sku.weight" property="weight" />	
+		<result column="sku.bar_code" property="barCode" />	
+		<result column="sku.status" property="status" />
+		
+		<result column="sku.qty" property="inventory" />
+		<result column="sku.net_qty" property="netqty" />
+		
+		<collection property="attrSaleList" ofType="com.baozun.product.domain.SalesAttribute"> 
+	    <id column="sku.attr_id" property="id" />
+	    <result column="sku.id" property="skuId" />
+		<result column="sku.attr_sale_code" property="code" />		
+		<result column="sku.attribute_sale_front_name" property="attributeFrontName" />
+		<result column="sku.attribute_sale_name" property="attributeName" />
+		<result column="sku.attribute_sale_type" property="attributeType" />
+		<result column="sku.attribute_sale_value_type" property="attributeValueType" />
+		<result column="sku.attribute_sale_value_mandatory" property="attributeValueMandatory" />
+		<result column="sku.attribute_sale_color" property="attributeColor" />
+		<result column="sku._attr_sale_filter_sign" property="filterSign" />
+		<result column="sku.attribute_sale_class_flag" property="attributeClassFlag" />
+		<result column="sku.attribute_sale_class_id" property="attributeClassId" />
+		<result column="sku.attr_sale_sort" property="sort" />		
+		<result column="sku.attr_sale_is_display" property="isDisplay" />
+		<collection property="attributeValueList" ofType="com.baozun.product.domain.AttributeSaleValue">
+		<id column="sku.attr_value_id" property="id"/>                                                 
+		<result column="sku.attr_value_code" property="code"/> 		
+		<result column="sku.attribute_value_name" property="attributeValueName"/> 
+		<result column="sku.attribute_value_front_name" property="attributeValueFrontName"/> 
+		<result column="sku.attribute_value_index" property="attributeIndex"/> 
+		<result column="sku.attr_value_image_url" property="attributeValuePicURL"/> 
+		<result column="sku.attribute_class_value_id" property="attributeClassValueId"/> 
+		</collection>			
+	</collection>
+	</collection>
+</resultMap>	
+<select id="querySkuInfo" resultMap="skuInfos">
+select 
+tpi.id 'item.id',
+tps.id 'sku.id',
+#sku 信息
+tps.id 'sku.id',
+tps.extention_code 'sku.extention_code',
+tps.code 'sku.code',
+concat(tps.list_price,'') as 'sku.list_price',
+concat(tps.sale_price,'') as 'sku.sale_price',
+tps.is_default 'sku.is_default',
+tps.weight 'sku.weight',
+tps.bar_code 'sku.bar_code',
+tps.status 'sku.status',
+#sku 的销售属性
+  tpa.id 'sku.attr_id',
+  tpa.code 'sku.attr_sale_code',
+  tpa.attribute_front_name 'sku.attribute_sale_front_name',
+  tpa.attribute_name 'sku.attribute_sale_name',
+  tpa.attribute_type 'sku.attribute_sale_type',
+  tpa.attribute_value_type 'sku.attribute_sale_value_type',
+  tpa.attribute_value_mandatory 'sku.attribute_sale_value_mandatory',
+  tpa.attribute_color 'sku.attribute_sale_color',
+  tpa.filter_sign 'sku._attr_sale_filter_sign',
+  tpa.attribute_class_flag 'sku.attribute_sale_class_flag',
+  tpa.attribute_class_id 'sku.attribute_sale_class_id',
+  tpa.sort 'sku.attr_sale_sort',
+  tpa.is_display 'sku.attr_sale_is_display',
+
+#sku 销售属性值
+  tpav.id 'sku.attr_value_id',
+  tpav.code 'sku.attr_value_code',
+  tpav.attribute_value_name 'sku.attribute_value_name',
+  tpav.attribute_value_front_name 'sku.attribute_value_front_name',
+  tpav.attribute_index 'sku.attribute_value_index',
+  tpav.image_url 'sku.attr_value_image_url',
+  tpav.attribute_class_value_id 'sku.attribute_class_value_id',
+  #库存信息
+  tpsi.qty 'sku.qty',
+  tpsi.net_qty 'sku.net_qty'
+from t_pd_item tpi
+LEFT JOIN t_pd_sku tps ON tpi.tenant_code=tps.tenant_code and tps.item_id=tpi.id and  tps.logic_delete=0
+LEFT JOIN t_pd_sku_attr_relation tpsa ON tpi.tenant_code and tpsa.tenant_code and tpsa.sku_id =tps.id and tpsa.attribute_type=1 and tpsa.logic_delete=0
+LEFT JOIN t_pd_attribute tpa on tpi.tenant_code=tpa.tenant_code and tpa.attribute_type=1 and tpa.logic_delete=0 and tpa.id=tpsa.attribute_id
+LEFT JOIN t_pd_attribute_value tpav on tpi.tenant_code=tpav.tenant_code  and tpav.belong_attribute_id=tpa.id and tpav.logic_delete=0 and tpav.id=tpsa.attribute_value
+LEFT JOIN t_pd_sku_inventory tpsi on tpi.tenant_code=tpsi.tenant_code and tpsi.extention_code=tps.code
+where  	tpi.logic_delete = 0  
+<foreach collection="itemIds" item="id"
+			open="and tpi.id in ( " close=")" separator=",">
+			#{id}
+		</foreach>
+</select>
+
+
+<resultMap type="com.baozun.product.domain.PromotionSku" id="promotionSkuInfo">
+    <id column="id" property="id" />	
+	<result column="sku_code" property="skuCode" />
+    <result column="activity_code" property="activityCode" />	    
+    <result column="activity_name" property="activityName" />	
+    <result column="activity_label_name" property="labelName" />	   
+    <result column="activity_start_time" property="startTime" />	
+    <result column="activity_end_time" property="endTime" />			
+</resultMap>
+<select id="queryPromotionData" resultMap="promotionSkuInfo">
+select 
+spncsm.id,
+spncsm.sku_code,
+spncsm.activity_code,
+spncsm.activity_name,
+spncsm.activity_label_name,
+date_format(spncsm.activity_start_time, '%Y-%c-%d %H:%i:%s') as 'activity_start_time',
+date_format(spncsm.activity_end_time, '%Y-%c-%d %H:%i:%s') as 'activity_end_time'
+from t_pd_item tpi
+LEFT JOIN t_pd_sku tps ON tpi.tenant_code=tps.tenant_code and tps.item_id=tpi.id and  tps.logic_delete=0
+LEFT JOIN solr_promotion_not_calculate_sku_msg spncsm ON tpi.tenant_code=spncsm.tenant_code and tps.code=spncsm.sku_code and spncsm.state=0
+where 
+<foreach collection="skuCodes" item="skuCode"
+			open=" tps.code in ( " close=")" separator=",">
+			#{skuCode}
+		</foreach>
+</select>
+
+
+<resultMap type="com.baozun.product.domain.PromotionSku" id="promotionSkuInfo2">
+    <id column="id" property="id" />	
+	<result column="sku_code" property="skuCode" />
+    <result column="activity_code" property="activityCode" />	    
+    <result column="activity_name" property="activityName" />	
+    <result column="activity_label_name" property="labelName" />	   
+    <result column="activity_start_time" property="startTime" />	
+    <result column="activity_end_time" property="endTime" />
+    <result column="activity_sale_price" property="salePrice" />		
+</resultMap>
+<select id="queryPromotionData2" resultMap="promotionSkuInfo2">
+select 
+spsm.id,
+spsm.sku_code 'sku_code',
+spsm.activity_code 'activity_code',
+spsm.activity_name 'activity_name',
+spsm.activity_label_name 'activity_label_name',
+concat(spsm.activity_sale_price,'') as 'activity_sale_price',
+date_format(spsm.activity_start_time, '%Y-%c-%d %H:%i:%s') as 'activity_start_time',
+date_format(spsm.activity_end_time, '%Y-%c-%d %H:%i:%s') as 'activity_end_time'
+from t_pd_item tpi
+LEFT JOIN t_pd_sku tps ON tpi.tenant_code=tps.tenant_code and tps.item_id=tpi.id and  tps.logic_delete=0
+LEFT JOIN solr_promotion_sku_msg spsm on tpi.tenant_code=spsm.tenant_code and  tps.code=spsm.sku_code and spsm.state=0
+where 
+<foreach collection="skuCodes" item="skuCode"
+			open=" tps.code in ( " close=")" separator=",">
+			#{skuCode}
+		</foreach>
+</select>
+
+
+<select id="queryMaxId" resultType="Long">
+select MAX(id) from t_pd_item tpi 
+</select>
+</mapper>
